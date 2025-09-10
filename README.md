@@ -164,9 +164,9 @@ graph TD
     
     C -->|POST /users| D[createUser]
     C -->|GET /users| E[getAllUsers]
-    C -->|GET /users/{id}| F[getUserById]
-    C -->|PUT /users/{id}| G[updateUser]
-    C -->|DELETE /users/{id}| H[deleteUser]
+    C -->|GET /users/id| F[getUserById]
+    C -->|PUT /users/id| G[updateUser]
+    C -->|DELETE /users/id| H[deleteUser]
     C -->|GET /users/report| I[generateCsvReport]
     
     D --> J[direct:createUser]
@@ -200,7 +200,7 @@ graph TD
     X --> AA[UserRepository Interface]
     
     AA --> BB[InMemoryUserRepository]
-    BB --> CC[Map<String, User>]
+    BB --> CC[Map String User]
     
     X --> DD[Response]
     DD --> B
