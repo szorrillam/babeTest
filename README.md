@@ -153,20 +153,145 @@ curl http://localhost:8080/api/users/report -o users_report.csv
 - Si el campo `role` está vacío, se asigna automáticamente "client"
 - Si el campo `role` tiene "admin", se mantiene el valor
 
-## Arquitectura de Apache Camel
+## Flujo de la Aplicación
 
-La aplicación utiliza Apache Camel para:
+### Diagrama de Arquitectura
 
-1. **Validación**: Verificar formatos de email y WhatsApp
-2. **Transformación**: Asignar roles por defecto
-3. **Enrutamiento**: Dirigir usuarios válidos al repositorio
-4. **Manejo de Errores**: Generar respuestas HTTP apropiadas
-
-### Flujo de Procesamiento
-
+```mermaid
+graph TD
+    A[Cliente HTTP] --> B[UserController]
+    B --> C{Operación}
+    
+    C -->|POST /users| D[createUser]
+    C -->|GET /users| E[getAllUsers]
+    C -->|GET /users/{id}| F[getUserById]
+    C -->|PUT /users/{id}| G[updateUser]
+    C -->|DELETE /users/{id}| H[deleteUser]
+    C -->|GET /users/report| I[generateCsvReport]
+    
+    D --> J[direct:createUser]
+    E --> K[direct:getAllUsers]
+    F --> L[direct:getUserById]
+    G --> M[direct:updateUser]
+    H --> N[direct:deleteUser]
+    I --> O[direct:generateCsvReport]
+    
+    J --> P[validateAndTransformUser]
+    M --> Q[validateAndTransformUserUpdate]
+    
+    P --> R{Validación OK?}
+    Q --> S{Validación OK?}
+    
+    R -->|Sí| T[createUser]
+    R -->|No| U[Error Response]
+    
+    S -->|Sí| V[updateUserFromDirect]
+    S -->|No| W[Error Response]
+    
+    T --> X[UserService]
+    V --> X
+    K --> X
+    L --> X
+    N --> X
+    O --> X
+    
+    X --> Y[UserValidationService]
+    X --> Z[UserTransformationService]
+    X --> AA[UserRepository Interface]
+    
+    AA --> BB[InMemoryUserRepository]
+    BB --> CC[Map<String, User>]
+    
+    X --> DD[Response]
+    DD --> B
+    B --> A
+    
+    U --> B
+    W --> B
 ```
-HTTP Request → Quarkus Controller → Apache Camel Routes → Validation → Transformation → Repository → Response
+
+### Flujo Detallado por Operación
+
+#### 1. **Crear Usuario (POST /api/users)**
 ```
+Cliente → UserController.createUser() 
+       → direct:createUser (Camel Route)
+       → validateAndTransformUser() 
+       → UserValidationService (validaciones)
+       → UserTransformationService (asignar rol "client")
+       → UserService.createUser()
+       → InMemoryUserRepository.save()
+       → Map<String, User> (almacenamiento)
+       → Response JSON
+```
+
+#### 2. **Obtener Todos los Usuarios (GET /api/users)**
+```
+Cliente → UserController.getAllUsers()
+       → direct:getAllUsers (Camel Route)
+       → UserService.getAllUsers()
+       → InMemoryUserRepository.findAll()
+       → Map<String, User> (lectura)
+       → Response JSON Array
+```
+
+#### 3. **Obtener Usuario por ID (GET /api/users/{id})**
+```
+Cliente → UserController.getUserById()
+       → direct:getUserById (Camel Route)
+       → UserService.getUserById()
+       → InMemoryUserRepository.findById()
+       → Map<String, User> (búsqueda)
+       → Response JSON
+```
+
+#### 4. **Actualizar Usuario (PUT /api/users/{id})**
+```
+Cliente → UserController.updateUser()
+       → direct:updateUser (Camel Route)
+       → validateAndTransformUserUpdate()
+       → UserValidationService (validaciones)
+       → UserTransformationService (transformaciones)
+       → UserService.updateUser()
+       → InMemoryUserRepository.update()
+       → Map<String, User> (actualización)
+       → Response JSON
+```
+
+#### 5. **Eliminar Usuario (DELETE /api/users/{id})**
+```
+Cliente → UserController.deleteUser()
+       → direct:deleteUser (Camel Route)
+       → UserService.deleteUser()
+       → InMemoryUserRepository.delete()
+       → Map<String, User> (eliminación)
+       → Response Boolean
+```
+
+#### 6. **Generar Reporte CSV (GET /api/users/report)**
+```
+Cliente → UserController.generateCsvReport()
+       → direct:generateCsvReport (Camel Route)
+       → UserService.getAllUsers()
+       → InMemoryUserRepository.findAll()
+       → Map<String, User> (lectura)
+       → Generación CSV en memoria
+       → Response CSV File
+```
+
+### Capas de la Aplicación
+
+1. **Capa de Presentación**: `UserController` - Maneja las peticiones HTTP
+2. **Capa de Enrutamiento**: `UserRoutes` (Apache Camel) - Procesa y enruta datos
+3. **Capa de Servicios**: `UserService`, `UserValidationService`, `UserTransformationService` - Lógica de negocio
+4. **Capa de Persistencia**: `UserRepository` (interfaz) → `InMemoryUserRepository` (implementación)
+5. **Capa de Datos**: `Map<String, User>` - Almacenamiento en memoria
+
+### Validaciones y Transformaciones
+
+- **Validaciones**: Email, WhatsApp, roles, campos obligatorios
+- **Transformaciones**: Asignación automática de rol "client" si está vacío
+- **Manejo de Errores**: Respuestas HTTP apropiadas con mensajes descriptivos
 
 ## Logging
 

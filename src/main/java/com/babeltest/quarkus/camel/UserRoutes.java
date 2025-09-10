@@ -3,12 +3,12 @@ package com.babeltest.quarkus.camel;
 import com.babeltest.quarkus.model.User;
 import com.babeltest.quarkus.model.UserRequest;
 import com.babeltest.quarkus.service.UserService;
+import com.babeltest.quarkus.service.UserValidationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
-import org.apache.camel.model.rest.RestParamType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,11 +16,7 @@ import java.util.List;
 
 /**
  * Rutas de Apache Camel para el manejo de usuarios.
- * Sigue el principio de responsabilidad única (SRP) al encargarse
- * únicamente del enrutamiento y procesamiento de mensajes.
- * 
  * Implementa la lógica de validación, transformación y enrutamiento
- * según los requerimientos de la prueba técnica.
  */
 @ApplicationScoped
 public class UserRoutes extends RouteBuilder {
@@ -29,6 +25,9 @@ public class UserRoutes extends RouteBuilder {
     
     @Inject
     UserService userService;
+    
+    @Inject
+    UserValidationService userValidationService;
     
     @Override
     public void configure() throws Exception {
@@ -102,40 +101,10 @@ public class UserRoutes extends RouteBuilder {
                 return;
             }
             
-            // Validar datos básicos
-            if (userRequest.getName() == null || userRequest.getName().trim().isEmpty()) {
-                exchange.getIn().setHeader("validationError", "El nombre es obligatorio");
+            String validationError = validateUserRequest(userRequest);
+            if (validationError != null) {
+                exchange.getIn().setHeader("validationError", validationError);
                 return;
-            }
-            
-            if (userRequest.getEmail() == null || userRequest.getEmail().trim().isEmpty()) {
-                exchange.getIn().setHeader("validationError", "El email es obligatorio");
-                return;
-            }
-            
-            if (userRequest.getWhatsapp() == null || userRequest.getWhatsapp().trim().isEmpty()) {
-                exchange.getIn().setHeader("validationError", "El número de WhatsApp es obligatorio");
-                return;
-            }
-            
-            // Validar formato de email
-            if (!userRequest.getEmail().matches("^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$")) {
-                exchange.getIn().setHeader("validationError", "El email debe tener un formato válido");
-                return;
-            }
-            
-            // Validar formato de WhatsApp
-            if (!userRequest.getWhatsapp().matches("^\\+?[1-9]\\d{1,14}$")) {
-                exchange.getIn().setHeader("validationError", "El número de WhatsApp debe tener un formato válido");
-                return;
-            }
-            
-            // Validar rol si está presente
-            if (userRequest.getRole() != null && !userRequest.getRole().trim().isEmpty()) {
-                if (!"admin".equals(userRequest.getRole()) && !"client".equals(userRequest.getRole())) {
-                    exchange.getIn().setHeader("validationError", "El rol debe ser 'admin' o 'client'");
-                    return;
-                }
             }
             
             // Aplicar transformación: asignar rol "client" si está vacío
@@ -150,6 +119,37 @@ public class UserRoutes extends RouteBuilder {
             logger.error("Error en validación y transformación: {}", e.getMessage(), e);
             exchange.getIn().setHeader("validationError", "Error interno en validación: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Valida un UserRequest y retorna el mensaje de error si existe.
+     */
+    private String validateUserRequest(UserRequest userRequest) {
+        if (userRequest.getName() == null || userRequest.getName().trim().isEmpty()) {
+            return "El nombre es obligatorio";
+        }
+        
+        if (userRequest.getEmail() == null || userRequest.getEmail().trim().isEmpty()) {
+            return "El email es obligatorio";
+        }
+        
+        if (userRequest.getWhatsapp() == null || userRequest.getWhatsapp().trim().isEmpty()) {
+            return "El número de WhatsApp es obligatorio";
+        }
+        
+        if (!userValidationService.isValidEmail(userRequest.getEmail())) {
+            return "El email debe tener un formato válido";
+        }
+        
+        if (!userValidationService.isValidWhatsapp(userRequest.getWhatsapp())) {
+            return "El número de WhatsApp debe tener un formato válido";
+        }
+        
+        if (!userValidationService.isValidRole(userRequest.getRole())) {
+            return "El rol debe ser 'admin' o 'client'";
+        }
+        
+        return null; // No hay errores
     }
     
     /**

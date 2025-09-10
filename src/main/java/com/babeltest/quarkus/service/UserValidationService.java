@@ -10,8 +10,7 @@ import java.util.regex.Pattern;
 
 /**
  * Servicio de validación de usuarios.
- * Sigue el principio de responsabilidad única (SRP) al encargarse
- * únicamente de la validación de datos de usuarios.
+ * Valida datos de usuarios.
  */
 @ApplicationScoped
 public class UserValidationService {

@@ -23,12 +23,8 @@ import java.util.Map;
 
 /**
  * Controlador REST para la gestión de usuarios.
- * Sigue el principio de responsabilidad única (SRP) al encargarse
- * únicamente de manejar las solicitudes HTTP y delegar el procesamiento
+ * Maneja las solicitudes HTTP y delegar el procesamiento
  * a Apache Camel mediante ProducerTemplate.
- * 
- * También sigue el principio de inversión de dependencias (DIP) al depender
- * de la abstracción ProducerTemplate en lugar de implementaciones concretas.
  */
 @Path("/api/users")
 @Produces(MediaType.APPLICATION_JSON)

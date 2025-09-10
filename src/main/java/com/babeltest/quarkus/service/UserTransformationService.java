@@ -6,8 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * Servicio de transformación de usuarios.
- * Sigue el principio de responsabilidad única (SRP) al encargarse
- * únicamente de la transformación de datos entre diferentes representaciones.
+ * Transforma datos entre diferentes representaciones.
  */
 @ApplicationScoped
 public class UserTransformationService {

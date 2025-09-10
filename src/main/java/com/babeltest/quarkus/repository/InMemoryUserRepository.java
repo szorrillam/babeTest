@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 /**
  * Implementación en memoria del repositorio de usuarios.
- * 
  * Utiliza ConcurrentHashMap para garantizar thread-safety en un entorno concurrente.
  */
 @ApplicationScoped

@@ -12,11 +12,6 @@ import java.util.Set;
 
 /**
  * Servicio principal de usuarios que orquesta las operaciones.
- * Sigue el principio de responsabilidad única (SRP) al coordinar
- * las operaciones de negocio relacionadas con usuarios.
- * 
- * También sigue el principio de inversión de dependencias (DIP) al depender
- * de abstracciones (interfaces) en lugar de implementaciones concretas.
  */
 @ApplicationScoped
 public class UserService {
